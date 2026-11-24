@@ -1,0 +1,47 @@
+*.pyc
+dist/
+*.vscode* 
+*.pdf
+*.png
+*.npy
+*.csv
+*.h5ad
+*.txt
+.*\.snakemake.*
+
+*.zip
+
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+# dist/
+# wheels/
+# *.egg-info
+# .ipynb_checkpoints/
+# .coverage
+
+# # Virtual environments
+.venv
+*.log
+
+
+
+visium_crcl_analysis/.snakemake
+
+
+*.html
+*.css
+*.woff
+*.js
+*.md
+*.html.md
+*.quarto_ipynb
+*.quarto_ipynb_1
+base.ipynb
+*.db
+
+
+.snakemake*
+

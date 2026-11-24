@@ -1,0 +1,23 @@
+from snakemake.utils import min_version
+
+##### set minimum snakemake version #####
+min_version("6.4.1")
+
+include: "rules/normhsic.smk"
+include: "rules/hsic.smk"
+configfile: "snakemake_quantiles/rules/config.yml"
+
+
+
+method_list = ['normhsic', 'hsic']
+dist_list = ['a']
+n_list = [512]
+d_list = [1, 2, 4]
+scale_pi_over_four_list = [0, 0.2, 0.4, 0.6, 0.8, 1]
+
+rule all:
+    input:
+        expand("results/snakemake_quantiles/output/{method}/n_{n}_d_{d}_dist_{dist}_angle_{scale_pi_over_four}_proptrain_{proportion_train}_S_{truncation_X}_T_{truncation_e}.csv",method = method_list, n = n_list, d = d_list, dist = dist_list, scale_pi_over_four = scale_pi_over_four_list, proportion_train = config["proportion_train"], truncation_X = config["truncation_X"], truncation_e = config["truncation_e"])
+
+
+# uv run snakemake --snakefile snakemake_quantiles/Snakefile --keep-going --nolock --use-conda --cores all --rerun-triggers mtime --conda-base-path $HOME/miniforge3

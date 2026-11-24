@@ -1,0 +1,4 @@
+truncation_X : [4]
+truncation_e : [4]
+proportion_train : [0.3]
+

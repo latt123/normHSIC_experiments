@@ -9,7 +9,7 @@ from knit.run_test import compute_gram_matrix
 from knit.compute_statistic import compute_test_statistic_from_gram_matrices
 from scipy.stats import chi2
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run knit with command line")
+    parser = argparse.ArgumentParser(description="Run normhsic with command line")
     parser.add_argument(
         "-i",
         "--input",

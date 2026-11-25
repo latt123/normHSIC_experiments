@@ -9,7 +9,7 @@ Experiments measuring the empirical power and level of kernel independence tests
 - `snakemake_quantiles` Snakemake pipeline for running both independence tests (normHSIC and HSIC) on all datasets, varying the bandwidth parameters used for kernels. 
 - `analysis.ipynb` Figures for Section 4 of "A Normalised Kernel Independence Test". 
 
-# Using snakemake
+# Using snakemake
 
 1. **Simulate data:**
 ```bash 

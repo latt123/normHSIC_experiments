@@ -4,9 +4,9 @@ Experiments measuring the empirical power and level of kernel independence tests
 
 # Structure
 - `simulate_data.py' Generating simulate data sets following experiment design in Gretton et al. 2007, A Kernel Statistical Test of Independence. Datasets simulated varying sample size, dimension, source distribution and parameter for strength of dependence signal. 
-- `snakemake/` Snakemake pipeline for running both independence tests (normHSIC and HSIC) on all datasets. 
-- `snakemake_proportion_train` Snakemake pipeline for running normHSIC for various train set sizes (normHSIC requires splitting dataset).
-- `snakemake_quantiles` Snakemake pipeline for running both independence tests (normHSIC and HSIC) on all datasets, varying the bandwidth parameters used for kernels. 
+- `snakemake/` snakemake pipeline for running both independence tests (normHSIC and HSIC) on all datasets. 
+- `snakemake_proportion_train` snakemake pipeline for running normHSIC for various train set sizes (normHSIC requires splitting dataset).
+- `snakemake_quantiles` snakemake pipeline for running both independence tests (normHSIC and HSIC) on all datasets, varying the bandwidth parameters used for kernels. 
 - `analysis.ipynb` Figures for Section 4 of "A Normalised Kernel Independence Test". 
 
 # Using snakemake
@@ -16,7 +16,7 @@ Experiments measuring the empirical power and level of kernel independence tests
 python simulate_data.py
 ```
 
-2. Ensure **Snakemake** and **conda** are installed
+2. Ensure **snakemake** and **conda** are installed
 
 3. **Create `knit_env` conda environement:**
 ```bash

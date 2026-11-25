@@ -1,0 +1,372 @@
+---
+title: "Comparing 2 Methods for Spatially Variable Gene Detection"
+bibliography: references.bib
+format:
+  html:
+    page-layout: full
+    code-fold: false
+jupyter: python3
+execute: 
+#   cache: true
+  keep-md: true
+---
+
+
+
+```{python}
+#| label: directories
+#| echo: false
+    results_dir = '../results/summary'
+    data_dir = '../results/data'
+    genes_clusering_dir = '../results/top_N_genes'
+```
+
+```{python}
+#| label: packages
+#| echo: false
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import scipy as sp
+    from IPython.display import display, Markdown
+    import scanpy as sc
+    import squidpy as sq
+    import os
+    import warnings
+    warnings.filterwarnings('ignore')
+
+```
+
+ 
+Spatially Variable Gene (SVG) Detection is the process of filtering genes from Spatial Transcriptomics datasets to include only those that have a strong 'non-random' variation over the tissue.
+
+**SPARKX** [@sparkx]
+Overall `Best' performing SVG method in Benchmark [@li_systematic_2025] reviewing 13 SVG methods.
+
+**normhsic** 
+Alternative SVG method not in Benchmark.
+
+
+```{python}
+#| label: svg_methods
+    svg_methods = ['SPARKX', 'normhsic']
+```
+
+Both methods were run on 12 Visium slides of pituitary gland tumour. 
+
+```{python}
+#| label: variable-lists
+    slides  = ['V1', 'V2', 'V3' , 'V4', 'Vf1', 'Vf2', 'Vf3', 'Vf4', 'Vf9', 'Vf10', 'Vf11', 'Vf12']
+```
+
+The methods return a 'p-value' that is used to rank the genes for each slide, the lower the p-value the higher the spatial variation of the gene. A binary classification if a gene is SVG or not can be determined by a cut-off on the p-values or selecting the 'N' lowest. This report uses the latter varying the value of `N'. 
+
+There is no `ground truth' for a dataset when identifying SVG genes. We compare the methods on the following measures, in part inspired by those used in the Benchmark. 
+
+1. Consistency of Genes Identified Across Similar Slices
+
+2. Difference in Rank of each Gene between the Two Methods. 
+    a. Overall tendance for each slide
+    b. Genes that are spatially variable for normhsic but not SPARKX
+    c. Genes that are spatially variable for SPARKX but not normhsic
+
+## 0. Summary of Datasets
+
+Comparing the number of genes, spots and total transcripts vary across each dataset.
+
+```{python}
+#| label: create-df-to-summarise-datasets
+#| output: asis
+#| echo: false
+
+df_values = []
+for slide in slides:
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')
+    adata = sc.read_h5ad(f'{data_dir}/{slide}.h5ad')
+    count_genes = adata.X.shape[1]
+    count_spots = adata.X.shape[0]
+    count_total_transcripts = np.sum(adata.X)
+    mean_transcript_per_spot = np.mean(np.sum(adata.X, axis = 1))
+    mean_transcript_per_gene = np.mean(np.sum(adata.X, axis = 0))
+    df_values.append([slide, count_genes, count_spots, count_total_transcripts, mean_transcript_per_spot, mean_transcript_per_gene])
+df = pd.DataFrame(df_values, columns = ['Slide', 'Unique Genes', 'Number of Spots', 'Total Transcripts', 'Mean Total Transcripts per Spot', 'Mean Total Transcripts per Gene'])  
+ys = df.columns[1:]
+
+
+
+def bar_plot_x_y(df,y):
+    x = 'Slide'
+    plt.figure(figsize = (12, 5))
+    plt.bar(df[x], df[y])
+    plt.ylabel('Count')
+    plt.xlabel(x)
+    plt.title(y)
+    plt.show()
+
+```
+
+
+::: {.panel-tabset}
+
+```{python}
+#| output: asis
+for y in ys:
+    display(Markdown(f"\n# {y}\n"))
+    bar_plot_x_y(df,y)
+    plt.show()
+```
+:::
+
+
+<!-- ## 1. Correlation between transcripts counts and p-value
+
+Is there a strong correlation between the number of transcripts and p-value for SVG detection for each gene? 
+
+```{python}
+#| label: function-to-compute-correlation-pval-to-total-expression-and-sparsity
+#| echo: false
+
+def plot_correlation_pvalue(variable):
+    plt.figure(figsize = (12, 5))
+    df_values = []
+    for slide in slides:
+        df = pd.read_csv(f'{results_dir}/{slide}.csv')
+        for svg_method in svg_methods:
+            corr = df[variable].corr(df[f'pval_{svg_method}'], method='kendall')
+            # corr =  sp.stats.pearsonr(df[f'pval_{svg_method}'], df['sparsity']).statistic**2
+            df_values.append([slide,  svg_method, corr**2])
+    df = pd.DataFrame(df_values, columns = ['slide', 'svg_method', variable])  
+    x = 'svg_method'
+    ax = sns.boxplot(df, x=x, y=variable) # , hue = hue)
+    plt.ylabel('$r^2$')
+    ax.tick_params(axis='x', rotation=60)
+    # another small change
+    plt.ylim(0,1)
+
+
+```
+
+
+
+::: {.panel-tabset}
+```{python}
+#| output: asis
+
+display(Markdown('\n# total transcripts\n'))
+plot_correlation_pvalue('total_counts')
+plt.show()
+
+display(Markdown('\n# sparsity\n'))
+plot_correlation_pvalue('sparsity')
+plt.show()
+
+```
+:::
+
+
+ -->
+
+## 1. Consistency of Genes Identified Across Similar Slices
+For each method, count of genes that are identified as spatially variables across all 12 slides. Defining spatially variable as ranking in the top 'N'. 
+
+
+```{python}
+#| echo: false
+def plot_between_slide_comparison():
+    slide = slides[0]
+    columns = ['gene']
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')[['gene', 'rank_normhsic']]
+    columns.append(f'rank_{slide}')
+    df.columns = columns
+
+
+    for slide in slides[1:]:
+        df_2 = pd.read_csv(f'{results_dir}/{slide}.csv')[['gene', 'rank_normhsic']]
+        df = pd.merge(df, df_2, how = 'outer', on = 'gene')
+        columns.append(f'rank_{slide}')
+        df.columns = columns
+
+    df_normhsic = df
+
+    for N_genes in [200, 500, 1000, 2000]:
+        df_normhsic[f'Slides in Top {N_genes} Genes'] = (df_normhsic.values[:, 1:(len(slides)+1)] <= N_genes).sum(axis = 1) 
+
+
+    slide = slides[0]
+    columns = ['gene']
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')[['gene', 'rank_SPARKX']]
+    columns.append(f'rank_{slide}')
+    df.columns = columns
+
+
+    for slide in slides[1:]:
+        df_2 = pd.read_csv(f'{results_dir}/{slide}.csv')[['gene', 'rank_SPARKX']]
+        df = pd.merge(df, df_2, how = 'outer', on = 'gene')
+        columns.append(f'rank_{slide}')
+        df.columns = columns
+
+    df_SPARKX = df
+
+    for N_genes in [200, 500, 1000, 2000]:
+        df_SPARKX[f'Slides in Top {N_genes} Genes'] = (df_SPARKX.values[:, 1:(len(slides)+1)] <= N_genes).sum(axis = 1) 
+    summary_SPARKX = np.sum((df_SPARKX[['Slides in Top 200 Genes', 'Slides in Top 500 Genes', 'Slides in Top 1000 Genes', 'Slides in Top 2000 Genes']] > (len(slides) - 1)), axis = 0)
+
+    summary_normhsic = np.sum((df_normhsic[['Slides in Top 200 Genes', 'Slides in Top 500 Genes', 'Slides in Top 1000 Genes', 'Slides in Top 2000 Genes']] > (len(slides) - 1)), axis = 0)
+
+    summary_both =pd.concat([summary_SPARKX, summary_normhsic], axis = 1)
+    summary_both.columns = ['SPARKX', 'normhsic']
+    summary_both.index = ['200 Genes', '500 Genes', '1000 Genes', '2000 Genes']
+    ax = summary_both.plot(kind='bar', rot = 0, figsize = (12,5))   
+    for p in ax.patches:
+        ax.annotate(str(p.get_height()), (p.get_x() + 0.0675, p.get_height() + 5 ))
+    plt.xlabel('Top N SVG Genes')
+    plt.ylabel('Genes in Top N SVG across all slides')
+    plt.title('Genes in Top N SVG across all 12 slides')
+    plt.show()
+```
+
+
+```{python}
+#| output: asis
+#| echo: false
+    plot_between_slide_comparison()
+```
+
+
+## 2. Difference in Rank of each Gene between the Two Methods. 
+
+Comparing the rank of each gene between the two methods for each slide.
+
+### a. Overall tendance for each slide
+
+```{python}
+#| label: plot-pvalues-correlation-between-methods
+#| echo: false
+plt.figure(figsize = (12, 5))
+df_values = []
+for slide in slides:
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')
+    corr = df['pval_SPARKX'].corr(df[f'pval_normhsic'], method='kendall')**2
+        # corr = sp.stats.pearsonr(df[f'pval_{svg_method}'], df['total_counts']).statistic**2
+    df_values.append([slide,  corr])
+df = pd.DataFrame(df_values, columns = ['slide', 'correlation']) 
+df = df.sort_values('correlation', ascending=False) 
+plt.bar(df['slide'], df['correlation'])
+plt.xlabel('Slide')
+plt.ylabel('$r^2$')
+plt.ylim(0,1)
+plt.title('Correlation between SVG methods')
+plt.show()
+```
+
+
+Genes are ranked in ascending order by their p-value. The first 'N' genes are the 'N' most spatially variable. `Downstream' Analysis will use only the first 'N' genes. Which genes have the greatest difference in rank between the two methods?
+
+ 
+```{python}
+#| label: function-to-plot-genes-and-filter-genes-by-rank
+#| output: asis
+#| echo: false
+
+def plot_genes(genes, slide, log_transcripts = False):
+    adata = sc.read_h5ad(f'{data_dir}/{slide}.h5ad')
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')
+    plot_titles = []
+    if log_transcripts == True:
+        genes_log_10 = []
+        for gene in genes:
+            adata.obs[f'{gene} log 10'] = np.log10(adata[:,gene].X[:,0].toarray() + 10**(-1))    
+            plot_titles.append(f'{gene} log 10, rank SPARKX = {df[df['gene'] == gene]['rank_SPARKX'].values[0]}, rank normhsic = {df[df['gene'] == gene]['rank_normhsic'].values[0]}')
+            genes_log_10.append(f'{gene} log 10')
+        sq.pl.spatial_scatter(adata, color=genes_log_10, img_alpha=0.5, size=1.5, cmap = 'gist_heat_r', shape = 'hex', figsize=(6,6), title=plot_titles, frameon=False, ncols = 2)
+    else:
+        for gene in genes:
+            plot_titles.append(f'{gene}, rank SPARKX = {df[df['gene'] == gene]['rank_SPARKX'].values[0]}, rank normhsic = {df[df['gene'] == gene]['rank_normhsic'].values[0]}')
+        sq.pl.spatial_scatter(adata, color=genes, img_alpha=0.5, size=1.5, cmap = 'gist_heat_r', shape = 'hex', figsize=(6,6), title=plot_titles, frameon=False, ncols = 2)
+    
+
+def filter_genes(slide, high_rank_normhsic, N_genes = 10, N_high = 2000, N_low = 200):
+    """
+    Returns a list of the N_genes genes with the largest ratio between rank SPARKX and rank normhsic.
+
+    If high_rank_normhsic, then the rank for normhsic is low and rank for SPARKX high. 
+
+    Genes ranked at least under N_high for at least one of the method and over N_low for at least one of the methods.
+
+    """
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')
+    genes_both_under_N_high = list(set(list(df[df['rank_SPARKX'] <= N_high]['gene']) + list(df[df['rank_normhsic'] <= N_high]['gene'])))
+    df_top_N = df[df['gene'].isin(genes_both_under_N_high)]
+
+
+    df_top_N = df_top_N[(df_top_N['rank_SPARKX'] <= N_low)&(df_top_N['rank_normhsic'] <= N_low) == False]
+    df_top_N['log_ratio_SPARKX_to_normhsic'] = (np.log10(df_top_N['rank_SPARKX'] + 1)/np.log10(df_top_N['rank_normhsic'] + 1))
+    df_top_N['ratio_SPARKX_to_normhsic'] = df_top_N['rank_SPARKX']/df_top_N['rank_normhsic']
+    df_top_N['difference'] = df_top_N['rank_SPARKX'] - df_top_N['rank_normhsic']
+    df_top_N = df_top_N.sort_values(by = 'ratio_SPARKX_to_normhsic', ascending = False)
+    df_top_N
+    if high_rank_normhsic:
+        genes = list(df_top_N['gene'].values)[:N_genes]
+    else:
+        genes = list(df_top_N['gene'].values)[-N_genes:]
+    return genes
+
+
+def plot_ranks(slide):
+    plt.figure(figsize = (8, 8))
+    df = pd.read_csv(f'{results_dir}/{slide}.csv')
+    plt.plot(df['rank_SPARKX'], df['rank_normhsic'], 'x')
+    plt.hlines(1000, 0, 10000, label= 'rank normhsic = 1000', colors=  'green')
+    plt.vlines(1000, 0, 10000, label= 'rank SPARKX = 1000', colors=  'red')
+    plt.xlim(0, 10000)
+    plt.ylim(0, 10000)
+    plt.ylabel('rank normhsic')
+    plt.legend()
+    plt.xlabel('rank SPARKX')
+
+```
+
+::: {.panel-tabset}
+
+```{python}
+#| output: asis
+for slide in slides:
+    display(Markdown(f"\n# {slide}\n"))
+    plot_ranks(slide)
+    plt.show()
+```
+
+:::
+
+
+### b. Genes that are spatially variable for normhsic but not SPARKX
+
+::: {.panel-tabset}
+
+```{python}
+#| output: asis
+for slide in slides:
+    display(Markdown(f"\n# {slide}\n"))
+    genes = filter_genes(slide, True, 8)
+    plot_genes(genes, slide)
+    plt.show()
+```
+
+:::
+
+
+### c. Genes that are spatially variable for SPARKX but not normhsic
+
+::: {.panel-tabset}
+
+```{python}
+#| output: asis
+for slide in slides:
+    display(Markdown(f"\n# {slide}\n"))
+    genes = filter_genes(slide, False, 8)
+    plot_genes(genes, slide)
+    plt.show()
+```
+:::
+

@@ -1,0 +1,17 @@
+from snakemake.utils import min_version
+
+##### set minimum snakemake version #####
+min_version("6.4.1")
+
+include: "rules/normhsic.smk"
+include: "rules/SPARKX.smk"
+
+method_list = ['normhsic', 'SPARKX']
+slide_list = ['V1', 'V2', 'V3', 'V4','Vf1', 'Vf2', 'Vf3', 'Vf4', 'Vf9', 'Vf10', 'Vf11', 'Vf12']
+
+rule all:
+    input:
+        expand("results/output/{method}/{slide}.csv", method=method_list, slide=slide_list)
+
+
+# uv run snakemake --snakefile snakemake/Snakefile --keep-going --nolock --use-conda --cores all --rerun-triggers mtime --conda-base-path $HOME/miniforge3

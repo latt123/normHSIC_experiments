@@ -35,7 +35,6 @@ visium_crcl_analysis/.snakemake
 *.css
 *.woff
 *.js
-*.md
 *.html.md
 *.quarto_ipynb
 *.quarto_ipynb_1

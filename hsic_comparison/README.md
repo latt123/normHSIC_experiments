@@ -1,6 +1,6 @@
 Code to reproduce Section 4 of "A Normalised Kernel Independence Test". 
 
-Experiments measuring the empirical power and level of kernel independence tests normHSIC ("A Normalised Kernel Independence Test") and HSIC (Gretton et al. 2007, A Kernel Statistical Test of Independence). 
+Experiments measuring the empirical power and level of kernel independence tests normHSIC ("A Normalised Kernel Independence Test") and HSIC (Gretton et al. 2007, "A Kernel Statistical Test of Independence"). 
 
 # Structure
 - `simulate_data.py' Generating simulate data sets following experiment design in Gretton et al. 2007, A Kernel Statistical Test of Independence. Datasets simulated varying sample size, dimension, source distribution and parameter for strength of dependence signal. 
@@ -18,7 +18,7 @@ python simulate_data.py
 
 2. Ensure **snakemake** and **conda** are installed
 
-3. **Create `knit_env` conda environement:**
+3. **Create `knit_env` conda environment:**
 ```bash
 conda env create -f knit_env.yml -n knit_env
 ```

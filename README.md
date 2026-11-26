@@ -10,6 +10,8 @@ Code to reproduce the analysis in "A Normalised Kernel Test for Independence".
 
 # knit package 
 NormHSIC implemented with `knit` (Kernel Normalised Independence Test) package.
-```bash
-    python -m pip install git+https://gitbio.ens-lyon.fr/lattwood/knit
+
+Install from GitHub:
+```console
+$ pip install git+https://github.com/latt123/knit
 ```

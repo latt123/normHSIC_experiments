@@ -9,9 +9,12 @@ Code to reproduce the analysis in "A Normalised Kernel Test for Independence".
 - `visium_pituitary_analysis` Analysis of normHSIC and SPARKX on Visium Spatial scRNAseq samples of pituitary tumours. Corresponding to Sections 5.2 and 5.3 of "A Normalised Kernel Test for Independence".
 
 # knit package 
-NormHSIC implemented with `knit` (Kernel Normalised Independence Test) package.
+NormHSIC implemented with [`knit`](https://github.com/latt123/knit) (Kernel Normalised Independence Test) package.
 
 Install from GitHub:
 ```console
 $ pip install git+https://github.com/latt123/knit
 ```
+
+# License
+See [License](License).

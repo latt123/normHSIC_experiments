@@ -34,6 +34,7 @@ conda env create -f knit_env.yml -n knit_env
 ```bash
 conda env create -f SPARKX_env.yml -n SPARKX_env
 ```
+Environment requirements are in `config` folder.
 
 4. **Configure paths:** Edit paths in Snakefile and ``.smk' rules files.
 
